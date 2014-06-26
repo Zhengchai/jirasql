@@ -8,18 +8,19 @@
 
 ##########################customise this section###############################################
 #start date: yyyy-mm-dd 
-startdate=2014-06-09
+startdate=2014-06-01
 #end date: yyyy-mm-dd 
-enddate=2014-06-12
+enddate=2014-06-26
 #jira projects, e.g. CA, CP, SCTX... 
 projects=CA
 #Set of people for report
-r3=akshayr,jonathanlu,johnel,ravip,robho,simonbe,thomassa,euanh,philippeg,\#ring-3\ defect\ coordinator
+r3=akshayr,jonathanlu,johnel,robho,simonbe,thomassa,euanh,philippeg,\#ring-3\ defect\ coordinator
 #storage team
 #sto=andreil,chandrikas,germanop,keithpe,thanosm,vineetht,zhengl 
 #windows team
 #win=bench,owensm,pauldu 
 names=$(r3)
+FixVersion='Creedence Outgoing'
 ########################end of custom section##################################################
 #jira server params, read from .config file
 host=$(lastword $(shell grep 'host' .config))
@@ -61,13 +62,108 @@ reallyclean:
 dotar:
 	rm -f archive.*
 	tar -cjf archive.tar ./*
-test:
-	$(setJiraPass) ; $(ConnectToJira) \
+testInTeams:
+	@echo '----------------------------Xfered into team-------------------------'
+	@$(setJiraPass) ; $(ConnectToJira) \
 	--field-separator="," --no-align --tuples-only \
 	--variable=STARTDATE=$(startdate) --variable=ENDDATE=$(enddate) \
-	--variable=NAMES="$(namesPsqlFormat)" --variable=PROJECTS="$(projectsPsqlFormat)" \
-	-f statusHistory.sql 
-#> priorityHistory.csv
+	--variable=TEAM="'xs-ring3'" --variable=PROJECTS="$(projectsPsqlFormat)" \
+	--variable=PRIORITY="'Blocker','Critical'" \
+	--variable=RELIN="Creedence" --variable=RELEXCL="Creedence Outgoing" \
+	-f TeamInHistory.sql | uniq
+testOutTeams:
+	@echo '----------------------------Xfered off team-------------------------'
+	@$(setJiraPass) ; $(ConnectToJira) \
+	--field-separator="," --no-align --tuples-only \
+	--variable=STARTDATE=$(startdate) --variable=ENDDATE=$(enddate) \
+	--variable=TEAM="'xs-ring3'" --variable=PROJECTS="$(projectsPsqlFormat)" \
+	--variable=PRIORITY="'Blocker','Critical'" \
+	--variable=RELIN="Creedence" --variable=RELEXCL="Creedence Outgoing" \
+	-f TeamOutHistory.sql | uniq
+testPromoteHistory:
+	@echo '----------------------------Priority raised------------------------'
+	@$(setJiraPass) ; $(ConnectToJira) \
+	--field-separator="," --no-align --tuples-only \
+	--variable=STARTDATE=$(startdate) --variable=ENDDATE=$(enddate) \
+	--variable=TEAM="'xs-ring3'" --variable=PROJECTS="$(projectsPsqlFormat)" \
+	--variable=PRIORITY="'Blocker','Critical'" \
+	--variable=RELIN="Creedence" --variable=RELEXCL="Creedence Outgoing" \
+    -f priorityHistory.sql | uniq
+testDemoteHistory:
+	@echo '----------------------------Priority lowered------------------------'
+	@$(setJiraPass) ; $(ConnectToJira) \
+	--field-separator="," --no-align --tuples-only \
+	--variable=STARTDATE=$(startdate) --variable=ENDDATE=$(enddate) \
+	--variable=TEAM="'xs-ring3'" --variable=PROJECTS="$(projectsPsqlFormat)" \
+	--variable=PRIORITY="'Major','Minor','Trivial'" \
+	--variable=RELIN="Creedence" --variable=RELEXCL="Creedence Outgoing" \
+    -f priorityHistory.sql | uniq
+testStatus:
+	@echo '----------------------------Status Reopened------------------------'
+	@$(setJiraPass) ; $(ConnectToJira) \
+	--field-separator="," --no-align --tuples-only \
+	--variable=STARTDATE=$(startdate) --variable=ENDDATE=$(enddate) \
+	--variable=TEAM="'xs-ring3'"  --variable=PROJECTS="$(projectsPsqlFormat)" \
+	--variable=PRIORITY="'Blocker','Critical'" \
+	--variable=RELIN="Creedence" --variable=RELEXCL="Creedence Outgoing" \
+	--variable=STATUS="'Resolved','Closed'" \
+    -f statusHistory.sql | uniq
+testFixVersion:
+	@echo '----------------------------Set to Outgoing-------------------------'
+	@$(setJiraPass) ; $(ConnectToJira) \
+	--field-separator="," --no-align --tuples-only \
+	--variable=STARTDATE=$(startdate) --variable=ENDDATE=$(enddate) \
+	--variable=TEAM="'xs-ring3'" --variable=PROJECTS="$(projectsPsqlFormat)" \
+	--variable=PRIORITY="'Blocker','Critical'" \
+	--variable=FIXVERSION="Creedence Outgoing" \
+	-f IssueFixVersionHistory.sql | uniq
+testAffectVersion:
+	@echo '----------------------------Affect Version Changed------------------'
+	@$(setJiraPass) ; $(ConnectToJira) \
+	--field-separator="," --no-align --tuples-only \
+	--variable=STARTDATE=$(startdate) --variable=ENDDATE=$(enddate) \
+	--variable=TEAM="'xs-ring3'" --variable=PROJECTS="$(projectsPsqlFormat)" \
+	--variable=PRIORITY="'Blocker','Critical'" \
+	--variable=AFFECTVERSION="Creedence" \
+	-f IssueAffectVersionHistory.sql | uniq
+testCreated:
+	@echo '----------------------------Created---------------------------------'
+	@$(setJiraPass) ; $(ConnectToJira) \
+	--field-separator="," --no-align --tuples-only \
+	--variable=STARTDATE=$(startdate) --variable=ENDDATE=$(enddate) \
+	--variable=TEAM="'xs-ring3'" --variable=PROJECTS="$(projectsPsqlFormat)" \
+	--variable=PRIORITY="'Blocker','Critical'" \
+	--variable=RELIN="Creedence" --variable=RELEXCL="Creedence Outgoing" \
+	-f createdHistory.sql | uniq
+testResolved:
+	@echo '----------------------------Resolved---------------------------------'
+	@$(setJiraPass) ; $(ConnectToJira) \
+	--field-separator="," --no-align --tuples-only \
+	--variable=STARTDATE=$(startdate) --variable=ENDDATE=$(enddate) \
+	--variable=TEAM="'xs-ring3'" --variable=PROJECTS="$(projectsPsqlFormat)" \
+	--variable=PRIORITY="'Blocker','Critical'" \
+	--variable=RELIN="Creedence" --variable=RELEXCL="Creedence Outgoing" \
+	-f resolvedHistory.sql | uniq
+testtest:
+	@echo '----------------------------Created---------------------------------'
+	@$(setJiraPass) ; $(ConnectToJira) \
+	--field-separator="," --no-align --tuples-only \
+	--variable=STARTDATE=$(startdate) --variable=ENDDATE=$(enddate) \
+	--variable=TEAM="'xs-ring3'" --variable=PROJECTS="$(projectsPsqlFormat)" \
+	--variable=PRIORITY="'Blocker','Critical'" \
+	--variable=RELIN="Creedence" --variable=RELEXCL="Creedence Outgoing" \
+	-f test.sql 
+
+echoInflow:
+	@echo '=====================[Inflow from $(startdate) to $(enddate)]======='
+echoOutflow:
+	@echo '=====================[Outflow from $(startdate) to $(enddate)]======='
+testInflow: echoInflow testCreated testInTeams testAffectVersion testPromoteHistory testStatus
+testOutflow: echoOutflow testResolved testOutTeams testFixVersion testDemoteHistory 
+test: testInflow testOutflow
+
+
+
 
 
 

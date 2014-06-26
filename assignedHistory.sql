@@ -1,15 +1,14 @@
---
--- list jira 'PROJECT' issues assigned to 'NAME' between STARTDATE and ENDDATE
--- Using the jira SQL interface, see: https://developer.atlassian.com/display/JIRADEV/Database+Schema
--- philippeg 19feb2014
---
-select changeitem.newvalue,changegroup.created,changeitem.field,project.pkey,jiraissue.issuenum,jiraissue.summary
-from  jiraissue,project,changeitem,changegroup 
+select to_char(changegroup.created, 'YYYY-MM-DD'),concat(project.pkey,'-',jiraissue.issuenum),priority.pname,concat(changeitem.oldvalue,'->',changeitem.newvalue)
+from  jiraissue,project,changeitem,changegroup,priority
 where date(changegroup.created) between :'STARTDATE' and :'ENDDATE'  
 and changeitem.field = 'assignee' 
-and newvalue in (:NAMES)
+and changeitem.newvalue in (:NAMES)
+and changeitem.oldvalue not in (:NAMES)
 and changegroup.id=changeitem.groupid 
 and changegroup.issueid=jiraissue.id 
-and jiraissue.project=project.id and project.pkey in (:PROJECTS)
-order by changegroup.created DESC;
+and jiraissue.project=project.id 
+and project.pkey in (:PROJECTS)
+and jiraissue.priority=priority.id
+and priority.pname in (:PRIORITY)
+order by changegroup.created ASC;
 
