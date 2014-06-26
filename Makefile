@@ -8,19 +8,18 @@
 
 ##########################customise this section###############################################
 #start date: yyyy-mm-dd 
-startdate=2014-06-01
+startdate=2014-06-23
 #end date: yyyy-mm-dd 
 enddate=2014-06-26
 #jira projects, e.g. CA, CP, SCTX... 
 projects=CA
-#Set of people for report
-r3=akshayr,jonathanlu,johnel,robho,simonbe,thomassa,euanh,philippeg,\#ring-3\ defect\ coordinator
-#storage team
-#sto=andreil,chandrikas,germanop,keithpe,thanosm,vineetht,zhengl 
-#windows team
-#win=bench,owensm,pauldu 
-names=$(r3)
-FixVersion='Creedence Outgoing'
+team=xs-ring3
+IssueVersion=Creedence
+FixVersion=Creedence Outgoing
+#priority='Blocker','Critical'
+#priorityDemote='Major','Minor','Trivial'
+priority='Major'
+priorityDemote='Minor','Trivial'
 ########################end of custom section##################################################
 #jira server params, read from .config file
 host=$(lastword $(shell grep 'host' .config))
@@ -40,130 +39,95 @@ targets+=statusHistory.$(suffix).csv priorityHistory.$(suffix).csv
 report=jira.report.$(suffix).csv
 ticketlist=jira.ticketlist.$(suffix).csv
 ###############################################################################################
-all: clean $(report) $(ticketlist)
-%.$(names).$(projects).from.$(startdate).to.$(enddate).csv: %.sql
-	$(setJiraPass) ; $(ConnectToJira) \
-	--field-separator="," --no-align --tuples-only \
-	--variable=STARTDATE=$(startdate) --variable=ENDDATE=$(enddate) \
-	--variable=NAMES="$(namesPsqlFormat)" --variable=PROJECTS="$(projectsPsqlFormat)" \
-	-f $< >> $@
-   
-$(report): $(targets)
-	cat  $^ | sort > $@
-
-$(ticketlist): $(report)
-	cat $< | cut -d, -f1,4,5 | sort | uniq > $@
+all: clean report.$(team).$(priority).from.$(startdate).$(enddate).csv
+inflow.csv: createdHistory.csv TeamInHistory.csv IssueAffectVersionHistory.csv promotePriorityHistory.csv reopenedHistory.csv
+	@echo '=====================[Inflow from $(startdate) to $(enddate)]=======' 	| tee   $@
+	@echo '----------------------------Created---------------------------------' 	| tee -a  $@
+	@cat createdHistory.csv															| tee -a  $@
+	@echo '----------------------------Xfered into team------------------------' 	| tee -a  $@
+	@cat TeamInHistory.csv															| tee -a  $@
+	@echo '----------------------------Affect Version Changed------------------'	| tee -a  $@
+	@cat IssueAffectVersionHistory.csv												| tee -a  $@
+	@echo '----------------------------Priority raised-------------------------'	| tee -a  $@
+	@cat promotePriorityHistory.csv													| tee -a  $@
+	@echo '----------------------------Status Reopened-------------------------'	| tee -a  $@
+	@cat reopenedHistory.csv														| tee -a  $@
+outflow.csv: resolvedHistory.csv TeamOutHistory.csv IssueFixVersionHistory.csv demotePriorityHistory.csv 
+	@echo '=====================[Outflow from $(startdate) to $(enddate)]======'	| tee   $@
+	@echo '----------------------------Resolved--------------------------------'	| tee -a  $@
+	@cat resolvedHistory.csv														| tee -a  $@
+	@echo '----------------------------Xfered off team-------------------------'	| tee -a  $@
+	@cat TeamOutHistory.csv															| tee -a  $@
+	@echo '----------------------------Set to Outgoing-------------------------'	| tee -a  $@
+	@cat IssueFixVersionHistory.csv													| tee -a  $@
+	@echo '----------------------------Priority lowered------------------------'	| tee -a  $@
+	@cat demotePriorityHistory.csv													| tee -a  $@
+report.$(team).$(priority).from.$(startdate).$(enddate).csv: inflow.csv outflow.csv
+	@echo 'Generating report...'
+	@echo 'REPORT from $(startdate) to $(enddate)'	| tee   $@
+	@echo 'Team: $(team)'							| tee -a  $@
+	@echo 'Release: $(IssueVersion)'				| tee -a  $@
+	@echo 'Priority: $(priority)'					| tee -a  $@
+	@cat inflow.csv | ./rmdup.pl					| tee -a  $@
+	@cat outflow.csv | ./rmdup.pl					| tee -a  $@
+	
 login:
 	$(setJiraPass) ; $(ConnectToJira)
 clean: 
-	rm -f $(targets) $(report) $(ticketlist)
+	rm -f inflow.csv outflow.csv $(subst .sql,.csv,$(shell ls *.sql))
 reallyclean:
 	rm -f *.csv
-dotar:
-	rm -f archive.*
-	tar -cjf archive.tar ./*
-testInTeams:
-	@echo '----------------------------Xfered into team-------------------------'
-	@$(setJiraPass) ; $(ConnectToJira) \
+IssueFixVersionHistory.csv: IssueFixVersionHistory.sql
+	$(setJiraPass) ; $(ConnectToJira) \
 	--field-separator="," --no-align --tuples-only \
 	--variable=STARTDATE=$(startdate) --variable=ENDDATE=$(enddate) \
-	--variable=TEAM="'xs-ring3'" --variable=PROJECTS="$(projectsPsqlFormat)" \
-	--variable=PRIORITY="'Blocker','Critical'" \
-	--variable=RELIN="Creedence" --variable=RELEXCL="Creedence Outgoing" \
-	-f TeamInHistory.sql | uniq
-testOutTeams:
-	@echo '----------------------------Xfered off team-------------------------'
-	@$(setJiraPass) ; $(ConnectToJira) \
+	--variable=TEAM="'$(team)'" --variable=PROJECTS="$(projectsPsqlFormat)" \
+	--variable=PRIORITY="$(priority)" \
+	--variable=FIXVERSION="$(FixVersion)" \
+	-f $< | uniq | tee   $@
+IssueAffectVersionHistory.csv: IssueAffectVersionHistory.sql
+	$(setJiraPass) ; $(ConnectToJira) \
 	--field-separator="," --no-align --tuples-only \
 	--variable=STARTDATE=$(startdate) --variable=ENDDATE=$(enddate) \
-	--variable=TEAM="'xs-ring3'" --variable=PROJECTS="$(projectsPsqlFormat)" \
-	--variable=PRIORITY="'Blocker','Critical'" \
-	--variable=RELIN="Creedence" --variable=RELEXCL="Creedence Outgoing" \
-	-f TeamOutHistory.sql | uniq
-testPromoteHistory:
-	@echo '----------------------------Priority raised------------------------'
-	@$(setJiraPass) ; $(ConnectToJira) \
+	--variable=TEAM="'$(team)'" --variable=PROJECTS="$(projectsPsqlFormat)" \
+	--variable=PRIORITY="$(priority)" \
+	--variable=AFFECTVERSION="$(IssueVersion)" \
+	-f $< | uniq | tee   $@
+promotePriorityHistory.csv: priorityHistory.sql
+	$(setJiraPass) ; $(ConnectToJira) \
 	--field-separator="," --no-align --tuples-only \
 	--variable=STARTDATE=$(startdate) --variable=ENDDATE=$(enddate) \
-	--variable=TEAM="'xs-ring3'" --variable=PROJECTS="$(projectsPsqlFormat)" \
-	--variable=PRIORITY="'Blocker','Critical'" \
-	--variable=RELIN="Creedence" --variable=RELEXCL="Creedence Outgoing" \
-    -f priorityHistory.sql | uniq
-testDemoteHistory:
-	@echo '----------------------------Priority lowered------------------------'
-	@$(setJiraPass) ; $(ConnectToJira) \
+	--variable=TEAM="'$(team)'" --variable=PROJECTS="$(projectsPsqlFormat)" \
+	--variable=RELIN="$(IssueVersion)" --variable=RELEXCL="$(FixVersion)" \
+	--variable=PRIORITY="$(priority)" \
+	-f $< | uniq | tee   $@
+demotePriorityHistory.csv: priorityHistory.sql
+	$(setJiraPass) ; $(ConnectToJira) \
 	--field-separator="," --no-align --tuples-only \
 	--variable=STARTDATE=$(startdate) --variable=ENDDATE=$(enddate) \
-	--variable=TEAM="'xs-ring3'" --variable=PROJECTS="$(projectsPsqlFormat)" \
-	--variable=PRIORITY="'Major','Minor','Trivial'" \
-	--variable=RELIN="Creedence" --variable=RELEXCL="Creedence Outgoing" \
-    -f priorityHistory.sql | uniq
-testStatus:
-	@echo '----------------------------Status Reopened------------------------'
-	@$(setJiraPass) ; $(ConnectToJira) \
+	--variable=TEAM="'$(team)'" --variable=PROJECTS="$(projectsPsqlFormat)" \
+	--variable=RELIN="$(IssueVersion)" --variable=RELEXCL="$(FixVersion)" \
+	--variable=PRIORITY="$(priorityDemote)" \
+	-f $< | uniq | tee   $@
+reopenedHistory.csv: statusHistory.sql
+	$(setJiraPass) ; $(ConnectToJira) \
 	--field-separator="," --no-align --tuples-only \
 	--variable=STARTDATE=$(startdate) --variable=ENDDATE=$(enddate) \
-	--variable=TEAM="'xs-ring3'"  --variable=PROJECTS="$(projectsPsqlFormat)" \
-	--variable=PRIORITY="'Blocker','Critical'" \
-	--variable=RELIN="Creedence" --variable=RELEXCL="Creedence Outgoing" \
+	--variable=TEAM="'$(team)'"  --variable=PROJECTS="$(projectsPsqlFormat)" \
+	--variable=RELIN="$(IssueVersion)" --variable=RELEXCL="$(FixVersion)" \
+	--variable=PRIORITY="$(priority)" \
 	--variable=STATUS="'Resolved','Closed'" \
-    -f statusHistory.sql | uniq
-testFixVersion:
-	@echo '----------------------------Set to Outgoing-------------------------'
-	@$(setJiraPass) ; $(ConnectToJira) \
+	-f $< | uniq | tee   $@
+%.csv: %.sql
+	$(setJiraPass) ; $(ConnectToJira) \
 	--field-separator="," --no-align --tuples-only \
 	--variable=STARTDATE=$(startdate) --variable=ENDDATE=$(enddate) \
-	--variable=TEAM="'xs-ring3'" --variable=PROJECTS="$(projectsPsqlFormat)" \
-	--variable=PRIORITY="'Blocker','Critical'" \
-	--variable=FIXVERSION="Creedence Outgoing" \
-	-f IssueFixVersionHistory.sql | uniq
-testAffectVersion:
-	@echo '----------------------------Affect Version Changed------------------'
-	@$(setJiraPass) ; $(ConnectToJira) \
-	--field-separator="," --no-align --tuples-only \
-	--variable=STARTDATE=$(startdate) --variable=ENDDATE=$(enddate) \
-	--variable=TEAM="'xs-ring3'" --variable=PROJECTS="$(projectsPsqlFormat)" \
-	--variable=PRIORITY="'Blocker','Critical'" \
-	--variable=AFFECTVERSION="Creedence" \
-	-f IssueAffectVersionHistory.sql | uniq
-testCreated:
-	@echo '----------------------------Created---------------------------------'
-	@$(setJiraPass) ; $(ConnectToJira) \
-	--field-separator="," --no-align --tuples-only \
-	--variable=STARTDATE=$(startdate) --variable=ENDDATE=$(enddate) \
-	--variable=TEAM="'xs-ring3'" --variable=PROJECTS="$(projectsPsqlFormat)" \
-	--variable=PRIORITY="'Blocker','Critical'" \
-	--variable=RELIN="Creedence" --variable=RELEXCL="Creedence Outgoing" \
-	-f createdHistory.sql | uniq
-testResolved:
-	@echo '----------------------------Resolved---------------------------------'
-	@$(setJiraPass) ; $(ConnectToJira) \
-	--field-separator="," --no-align --tuples-only \
-	--variable=STARTDATE=$(startdate) --variable=ENDDATE=$(enddate) \
-	--variable=TEAM="'xs-ring3'" --variable=PROJECTS="$(projectsPsqlFormat)" \
-	--variable=PRIORITY="'Blocker','Critical'" \
-	--variable=RELIN="Creedence" --variable=RELEXCL="Creedence Outgoing" \
-	-f resolvedHistory.sql | uniq
-testtest:
-	@echo '----------------------------Created---------------------------------'
-	@$(setJiraPass) ; $(ConnectToJira) \
-	--field-separator="," --no-align --tuples-only \
-	--variable=STARTDATE=$(startdate) --variable=ENDDATE=$(enddate) \
-	--variable=TEAM="'xs-ring3'" --variable=PROJECTS="$(projectsPsqlFormat)" \
-	--variable=PRIORITY="'Blocker','Critical'" \
-	--variable=RELIN="Creedence" --variable=RELEXCL="Creedence Outgoing" \
-	-f test.sql 
-
-echoInflow:
-	@echo '=====================[Inflow from $(startdate) to $(enddate)]======='
-echoOutflow:
-	@echo '=====================[Outflow from $(startdate) to $(enddate)]======='
-testInflow: echoInflow testCreated testInTeams testAffectVersion testPromoteHistory testStatus
-testOutflow: echoOutflow testResolved testOutTeams testFixVersion testDemoteHistory 
-test: testInflow testOutflow
-
-
-
+	--variable=TEAM="'$(team)'" --variable=PROJECTS="$(projectsPsqlFormat)" \
+	--variable=RELIN="$(IssueVersion)" --variable=RELEXCL="$(FixVersion)" \
+	--variable=PRIORITY="$(priority)" \
+	-f $< | uniq | tee   $@
+test:
+	@echo $(subst .sql,.csv,$(shell ls *.sql))
 
 
 

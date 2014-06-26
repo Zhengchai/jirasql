@@ -1,4 +1,4 @@
-select to_char(changegroup.created, 'YYYY-MM-DD'),concat(project.pkey,'-',j.issuenum),priority.pname,concat(changeitem.oldstring,'->',changeitem.newstring)
+select to_char(changegroup.created, 'YYYY-MM-DD'),concat(project.pkey,'-',j.issuenum),priority.pname,j.assignee,concat(changeitem.oldstring,'->',changeitem.newstring)
 from  jiraissue j,project,changeitem,changegroup,priority
 where date(changegroup.created) between :'STARTDATE' and :'ENDDATE'  
 and j.project=project.id and project.pkey in (:PROJECTS)
