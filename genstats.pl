@@ -1,6 +1,7 @@
 #!/usr/bin/perl
-@wk = ('17','18','19','20','21','22','23','24','25','26');
-@teams = ('xs-ring3','xs-ring0','xs-storage','xs-gui','xs-perf','xs-windows');
+@wk = ('16','17','18','19','20','21','22','23','24','25','26');
+@teams = ('xs-ring3');
+#@teams = ('xs-ring3','xs-ring0','xs-storage','xs-gui','xs-perf','xs-windows');
 @pri = ('Blocker,Critical','Major');
 @dir = ('inflow','outflow');
 #parse the totals

@@ -15,7 +15,7 @@ enddate=2014-06-26
 wk=26
 #jira projects, e.g. CA, CP, SCTX... 
 projects=CA
-team=xs-ring3
+team=xs-ring0
 IssueVersion=Creedence
 FixVersion=Creedence Outgoing
 #priority=Blocker,Critical
@@ -37,39 +37,19 @@ priorityPsqlFormat=$(shell echo $(priority) | sed "s/\([^,]*\)/'\1'/g")
 priorityDemotePsqlFormat=$(shell echo $(priorityDemote) | sed "s/\([^,]*\)/'\1'/g")
 projectsPsqlFormat=$(shell echo $(projects) | sed "s/\([^,]*\)/'\1'/g")
 #csv targets
-inflowCSV=createdHistory.csv TeamInHistory.csv IssueAffectVersionHistory.csv promotePriorityHistory.csv reopenedHistory.csv
+inflowCSV=createdHistory.csv IssueAffectVersionHistory.csv TeamInHistory.csv promotePriorityHistory.csv reopenedHistory.csv
 outflowCSV=resolvedHistory.csv TeamOutHistory.csv IssueFixVersionHistory.csv demotePriorityHistory.csv 
 inflowreport=inflow.$(suffix).csv
 outflowreport=outflow.$(suffix).csv
 report=report.$(suffix).csv
 ###############################################################################################
-all: clean $(inflowreport) $(outflowreport) $(report)
+all: $(inflowCSV) $(outflowCSV) inflow.csv outflow.csv
 inflow.csv: $(inflowCSV)
-	@echo '=====================[Inflow from $(startdate) to $(enddate)]=======' 	| tee   $@
-	@echo '----------------------------Created---------------------------------' 	| tee -a  $@
-	@cat createdHistory.csv															| tee -a  $@
-	@echo '----------------------------Xfered into team------------------------' 	| tee -a  $@
-	@cat TeamInHistory.csv															| tee -a  $@
-	@echo '----------------------------Affect Version Changed------------------'	| tee -a  $@
-	@cat IssueAffectVersionHistory.csv												| tee -a  $@
-	@echo '----------------------------Priority changed------------------------'	| tee -a  $@
-	@cat promotePriorityHistory.csv													| tee -a  $@
-	@echo '----------------------------Status Reopened-------------------------'	| tee -a  $@
-	@cat reopenedHistory.csv														| tee -a  $@
+	cat $(inflowCSV)	> /tmp/tmpinflow.csv
+	sort -r /tmp/tmpinflow.csv | ./rmdup.pl	>  $@
 outflow.csv: $(outflowCSV)
-	@echo '=====================[Outflow from $(startdate) to $(enddate)]======'	| tee   $@
-	@echo '----------------------------Resolved--------------------------------'	| tee -a  $@
-	@cat resolvedHistory.csv														| tee -a  $@
-	@echo '----------------------------Xfered off team-------------------------'	| tee -a  $@
-	@cat TeamOutHistory.csv															| tee -a  $@
-	@echo '----------------------------Set to Outgoing-------------------------'	| tee -a  $@
-	@cat IssueFixVersionHistory.csv													| tee -a  $@
-	@echo '----------------------------Priority lowered------------------------'	| tee -a  $@
-	@cat demotePriorityHistory.csv													| tee -a  $@
-$(inflowreport): inflow.csv
-	@cat $< | ./rmdup.pl	| tee -a  $@
-$(outflowreport): outflow.csv
-	@cat $< | ./rmdup.pl	| tee -a  $@
+	cat $(outflowCSV)	> /tmp/tmpoutflow.csv
+	sort -r /tmp/tmpoutflow.csv | ./rmdup.pl >  $@
 $(report): $(inflowreport) $(outflowreport)
 	@echo 'Generating report...'
 	@echo 'REPORT from $(startdate) to $(enddate)'	| tee   $@
@@ -85,12 +65,20 @@ clean:
 	rm -f inflow.csv outflow.csv $(inflowCSV) $(outflowCSV)
 reallyclean:
 	rm -f *.csv
+createdHistory.csv: createdHistory.sql
+	$(setJiraPass) ; $(ConnectToJira) \
+	--field-separator="," --no-align --tuples-only \
+	--variable=STARTDATE=$(startdate) --variable=ENDDATE=$(enddate) \
+	--variable=TEAM="'$(team)'" --variable=PROJECTS="$(projectsPsqlFormat)" \
+	--variable=RELIN="$(IssueVersion)" --variable=RELEXCL="$(FixVersion)" \
+	--variable=PRIORITY="$(priorityPsqlFormat)"   --variable=LOG="C+" \
+	-f $< | uniq | tee   $@
 IssueFixVersionHistory.csv: IssueFixVersionHistory.sql
 	$(setJiraPass) ; $(ConnectToJira) \
 	--field-separator="," --no-align --tuples-only \
 	--variable=STARTDATE=$(startdate) --variable=ENDDATE=$(enddate) \
 	--variable=TEAM="'$(team)'" --variable=PROJECTS="$(projectsPsqlFormat)" \
-	--variable=PRIORITY="$(priorityPsqlFormat)" \
+	--variable=PRIORITY="$(priorityPsqlFormat)" --variable=LOG="V-" \
 	--variable=FIXVERSION="$(FixVersion)" \
 	-f $< | uniq | tee   $@
 IssueAffectVersionHistory.csv: IssueAffectVersionHistory.sql
@@ -98,7 +86,7 @@ IssueAffectVersionHistory.csv: IssueAffectVersionHistory.sql
 	--field-separator="," --no-align --tuples-only \
 	--variable=STARTDATE=$(startdate) --variable=ENDDATE=$(enddate) \
 	--variable=TEAM="'$(team)'" --variable=PROJECTS="$(projectsPsqlFormat)" \
-	--variable=PRIORITY="$(priorityPsqlFormat)" \
+	--variable=PRIORITY="$(priorityPsqlFormat)" --variable=LOG="V+" \
 	--variable=AFFECTVERSION="$(IssueVersion)" \
 	-f $< | uniq | tee   $@
 promotePriorityHistory.csv: priorityHistory.sql
@@ -107,7 +95,7 @@ promotePriorityHistory.csv: priorityHistory.sql
 	--variable=STARTDATE=$(startdate) --variable=ENDDATE=$(enddate) \
 	--variable=TEAM="'$(team)'" --variable=PROJECTS="$(projectsPsqlFormat)" \
 	--variable=RELIN="$(IssueVersion)" --variable=RELEXCL="$(FixVersion)" \
-	--variable=PRIORITY="$(priorityPsqlFormat)" \
+	--variable=PRIORITY="$(priorityPsqlFormat)"  --variable=LOG="P+" \
 	-f $< | uniq | tee   $@
 demotePriorityHistory.csv: priorityHistory.sql
 	$(setJiraPass) ; $(ConnectToJira) \
@@ -115,7 +103,7 @@ demotePriorityHistory.csv: priorityHistory.sql
 	--variable=STARTDATE=$(startdate) --variable=ENDDATE=$(enddate) \
 	--variable=TEAM="'$(team)'" --variable=PROJECTS="$(projectsPsqlFormat)" \
 	--variable=RELIN="$(IssueVersion)" --variable=RELEXCL="$(FixVersion)" \
-	--variable=PRIORITY="$(priorityDemotePsqlFormat)" \
+	--variable=PRIORITY="$(priorityDemotePsqlFormat)"  --variable=LOG="P-" \
 	-f $< | uniq | tee   $@
 reopenedHistory.csv: statusHistory.sql
 	$(setJiraPass) ; $(ConnectToJira) \
@@ -123,27 +111,35 @@ reopenedHistory.csv: statusHistory.sql
 	--variable=STARTDATE=$(startdate) --variable=ENDDATE=$(enddate) \
 	--variable=TEAM="'$(team)'"  --variable=PROJECTS="$(projectsPsqlFormat)" \
 	--variable=RELIN="$(IssueVersion)" --variable=RELEXCL="$(FixVersion)" \
-	--variable=PRIORITY="$(priorityPsqlFormat)" \
+	--variable=PRIORITY="$(priorityPsqlFormat)"   --variable=LOG="O+" \
 	--variable=STATUS="'Resolved','Closed'" \
 	-f $< | uniq | tee   $@
-%.csv: %.sql
+TeamInHistory.csv: TeamInHistory.sql
 	$(setJiraPass) ; $(ConnectToJira) \
 	--field-separator="," --no-align --tuples-only \
 	--variable=STARTDATE=$(startdate) --variable=ENDDATE=$(enddate) \
 	--variable=TEAM="'$(team)'" --variable=PROJECTS="$(projectsPsqlFormat)" \
 	--variable=RELIN="$(IssueVersion)" --variable=RELEXCL="$(FixVersion)" \
-	--variable=PRIORITY="$(priorityPsqlFormat)" \
+	--variable=PRIORITY="$(priorityPsqlFormat)"   --variable=LOG="T+" \
+	-f $< | uniq | tee   $@
+TeamOutHistory.csv: TeamOutHistory.sql
+	$(setJiraPass) ; $(ConnectToJira) \
+	--field-separator="," --no-align --tuples-only \
+	--variable=STARTDATE=$(startdate) --variable=ENDDATE=$(enddate) \
+	--variable=TEAM="'$(team)'" --variable=PROJECTS="$(projectsPsqlFormat)" \
+	--variable=RELIN="$(IssueVersion)" --variable=RELEXCL="$(FixVersion)" \
+	--variable=PRIORITY="$(priorityPsqlFormat)"   --variable=LOG="T-" \
+	-f $< | uniq | tee   $@
+resolvedHistory.csv: resolvedHistory.sql
+	$(setJiraPass) ; $(ConnectToJira) \
+	--field-separator="," --no-align --tuples-only \
+	--variable=STARTDATE=$(startdate) --variable=ENDDATE=$(enddate) \
+	--variable=TEAM="'$(team)'" --variable=PROJECTS="$(projectsPsqlFormat)" \
+	--variable=RELIN="$(IssueVersion)" --variable=RELEXCL="$(FixVersion)" \
+	--variable=PRIORITY="$(priorityPsqlFormat)"   --variable=LOG="R-" \
 	-f $< | uniq | tee   $@
 test:
-	$(setJiraPass) ; $(ConnectToJira) \
-	--field-separator="," --no-align --tuples-only \
-	--variable=STARTDATE=$(startdate) --variable=ENDDATE=$(enddate) \
-	--variable=TEAM="'$(team)'" --variable=PROJECTS="$(projectsPsqlFormat)" \
-	--variable=RELIN="$(IssueVersion)" --variable=RELEXCL="$(FixVersion)" \
-	--variable=PRIORITY="$(priorityPsqlFormat)" \
-	-f test.sql 
-
-
+	cat $(inflowCSV)	> test2.csv
 
 
 

@@ -1,7 +1,6 @@
-select to_char(j.created, 'YYYY-MM-DD'),concat(project.pkey,'-',j.issuenum),priority.pname,j.assignee
+select to_char(j.created, 'YYYY-MM-DD'),:'LOG',concat(project.pkey,'-',j.issuenum),priority.pname,j.assignee
 from  jiraissue j,project,issuetype,priority
-where date(j.created) between :'STARTDATE' and :'ENDDATE'  
-and j.project=project.id and project.pkey in (:PROJECTS)
+where j.project=project.id and project.pkey in (:PROJECTS)
 and j.priority=priority.id and priority.pname in (:PRIORITY)
 and j.issuetype=issuetype.id and issuetype.pname='Bug'
 and j.id in (select label.issue from label where label.label in (:TEAM))

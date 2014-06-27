@@ -8,7 +8,7 @@
 $count=0;
 while(<>){
 	$line=$_;
-	($date,$issue)=split(/,/);
+	($date,$cat,$issue)=split(/,/);
 #ignore comment lines and skip duplicates
 	if($issue eq '')
 		{print $line;next;}
