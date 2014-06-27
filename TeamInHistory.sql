@@ -1,8 +1,9 @@
 select to_char(changegroup.created, 'YYYY-MM-DD'),concat(project.pkey,'-',j.issuenum),priority.pname,j.assignee,concat(changeitem.oldstring,'->',changeitem.newstring)
-from  jiraissue j,project,changeitem,changegroup,priority
+from  jiraissue j,project,changeitem,changegroup,priority,issuetype
 where date(changegroup.created) between :'STARTDATE' and :'ENDDATE'  
 and j.project=project.id and project.pkey in (:PROJECTS)
 and j.priority=priority.id and priority.pname in (:PRIORITY)
+and j.issuetype=issuetype.id and issuetype.pname='Bug'
 and changeitem.field = 'Teams' 
 and position((:TEAM) in changeitem.newstring) != 0
 and position((:TEAM) in changeitem.oldstring) =0

@@ -1,8 +1,9 @@
 select to_char(j.resolutiondate, 'YYYY-MM-DD'),concat(project.pkey,'-',j.issuenum),priority.pname,j.assignee,resolution.pname
-from  jiraissue j,project,priority,label l,resolution
+from  jiraissue j,project,priority,issuetype,label l,resolution
 where date(j.resolutiondate) between :'STARTDATE' and :'ENDDATE'  
 and j.project=project.id and project.pkey in (:PROJECTS)
 and j.priority=priority.id and priority.pname in (:PRIORITY)
+and j.issuetype=issuetype.id and issuetype.pname='Bug'
 and l.issue=j.id and l.label in (:TEAM) 
 and j.resolution=resolution.id
 
