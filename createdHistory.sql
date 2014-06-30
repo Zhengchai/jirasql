@@ -1,4 +1,4 @@
-select to_char(j.created, 'YYYY-MM-DD'),:'LOG',concat(project.pkey,'-',j.issuenum),priority.pname,j.assignee
+select to_char(j.created, 'YYYY-MM-DD'),to_char(j.created, 'YY"wk"WW'),:'LOG',concat(project.pkey,'-',j.issuenum),priority.pname,j.assignee
 from  jiraissue j,project,issuetype,priority
 where j.project=project.id and project.pkey in (:PROJECTS)
 and j.priority=priority.id and priority.pname in (:PRIORITY)
