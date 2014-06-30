@@ -1,7 +1,8 @@
 #!/usr/bin/perl
-@wk = ('16','17','18','19','20','21','22','23','24','25','26');
-@teams = ('xs-ring3');
-#@teams = ('xs-ring3','xs-ring0','xs-storage','xs-gui','xs-perf','xs-windows');
+$startwk='14wk16';
+$endwk='14wk26';
+@wk = ('14wk16','14wk17','14wk18','14wk19','14wk20','14wk21','14wk22','14wk23','14wk24','14wk25','14wk26');
+@teams = ('xs-ring0','xs-ring3','xs-storage','xs-gui','xs-perf','xs-windows');
 @pri = ('Blocker,Critical','Major');
 @dir = ('inflow','outflow');
 #parse the totals
@@ -9,35 +10,37 @@ foreach (@dir){
 	$dir=$_;
 	foreach(@teams){
 		$team=$_;
-		foreach(@wk){
-			$wk=$_;
 			foreach(@pri){
 				$pri=$_;
+				$file="$dir.$team.$pri.csv";
 #grep the CAs
-				$item="$dir.$team.wk$wk.$pri";
-				@x= `grep -Eo CA-[0-9]+ $item.csv`;
-#Check if we've seen already seen them to avoid double accounting
-#Now turned off, as it introduces too much variations with actuals
-				foreach(@x){
-#					if($seen{$_.$dir.$team.$pri}){
-#						#print "$item Seen: $_";
-#						next;
-#					} 
-#					$seen{$_.$dir.$team.$pri}=1;
+				-e $file or die "ABORT: $file NOT FOUND!\n";
+				@CAs= `grep -E CA-[0-9]+ $file`;
+#print "$file:",join(',',@CAs),"\n";
+#Iterate through CAs
+				foreach(@CAs){
+				($date,$wk,$cat,$issue)=split(/,/);
+#print "$date,$wk,$cat,$issue\n";
+#Normalise wk number
+#Anything that happened before $startwk is accounted to that $startweek
+				if($wk lt $startwk)
+					{$wk = $startwk;}
+				$item="$dir.$team.$wk.$pri";
 					$total{$item}+=1;
 				}
-}}}}
+}}}
+#print "$_->$total{$_}\n" for (keys %total);
 #generate the csv
 foreach(@teams){
 	$team=$_;
-	print "#####################$_###########################\n";
+	print "####$_####\n";
 	foreach(@pri){
 		$pri=$_;
 #Compute the Inflow and Outflow
 		@inflow=();
 		@outflow=();
-		map{$item="inflow.$team.wk$_.$pri";push(@inflow,$total{$item});}@wk;
-		map{$item="outflow.$team.wk$_.$pri";push(@outflow,$total{$item});}@wk;
+		map{$item="inflow.$team.$_.$pri";push(@inflow,$total{$item});}@wk;
+		map{$item="outflow.$team.$_.$pri";push(@outflow,$total{$item});}@wk;
 #Compute the Cumulative total
 		@cumul=();
 		$cumul[0]=$inflow[0];
