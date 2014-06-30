@@ -4,7 +4,7 @@ where j.project=project.id and project.pkey in (:PROJECTS)
 and j.priority=priority.id and priority.pname in (:PRIORITY)
 and j.issuetype=issuetype.id and issuetype.pname='Bug'
 and l.issue=j.id and l.label in (:TEAM) 
-and changeitem.field = 'Version' and changeitem.newstring=:'AFFECTVERSION'
+and changeitem.field = 'Version' and changeitem.newstring=:'RELIN'
 and changegroup.id=changeitem.groupid and changegroup.issueid=j.id 
 order by changegroup.created DESC;
 

@@ -1,8 +1,11 @@
 #!/usr/bin/perl
 $startwk='14wk16';
 $endwk='14wk26';
-@wk = ('14wk16','14wk17','14wk18','14wk19','14wk20','14wk21','14wk22','14wk23','14wk24','14wk25','14wk26');
-@teams = ('xs-ring0','xs-ring3','xs-storage','xs-gui','xs-perf','xs-windows');
+@wk = qw(14wk16 14wk17 14wk18 14wk19 14wk20 14wk21 14wk22 14wk23 14wk24 14wk25 14wk26);
+#By team
+@teams = qw(xs-ring0 xs-ring3 xs-storage xs-gui xs-perf xs-windows);
+#For all teams
+push(@teams,'xs-ring0,xs-ring3,xs-storage,xs-gui,xs-perf,xs-windows');
 @pri = ('Blocker,Critical','Major');
 @dir = ('inflow','outflow');
 #parse the totals
@@ -29,11 +32,13 @@ foreach (@dir){
 					$total{$item}+=1;
 				}
 }}}
-#print "$_->$total{$_}\n" for (keys %total);
+#print "$_->$total{$_}\n" for (keys %total);exit 0;
 #generate the csv
 foreach(@teams){
-	$team=$_;
-	print "####$_####\n";
+	$team = $_;
+	$ppteam = $team;
+	$ppteam =~ s/,/ & /g; # pretty print team(s)
+	print '____'.$ppteam.'____'; print ',______' x scalar @wk; print "\n";
 	foreach(@pri){
 		$pri=$_;
 #Compute the Inflow and Outflow
