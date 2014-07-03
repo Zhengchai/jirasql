@@ -6,31 +6,30 @@ $endwk='14wk26';
 @teams = qw(xs-ring0 xs-ring3 xs-storage xs-gui xs-perf xs-windows);
 #For all teams
 push(@teams,'xs-ring0,xs-ring3,xs-storage,xs-gui,xs-perf,xs-windows');
-@pri = ('Blocker,Critical','Major');
-@dir = ('inflow','outflow');
+@pri =('Blocker,Critical','Major');
+@inflowCat=qw(C+ V+ P+ O+);
+@outflowCat=qw(R- V- P-);
+@cat=(@inflow,@outflow);
+
 #parse the totals
-foreach (@dir){
-	$dir=$_;
-	foreach(@teams){
-		$team=$_;
-			foreach(@pri){
-				$pri=$_;
-				$file="$dir.$team.$pri.csv";
+foreach (@teams){
+	$team=$_;
+	foreach(@pri){
+		$pri=$_;
+			$file="report.$team.$pri.csv";
 #grep the CAs
-				-e $file or die "ABORT: $file NOT FOUND!\n";
-				@CAs= `grep -E CA-[0-9]+ $file`;
+			-e $file or die "ABORT: $file NOT FOUND!\n";
+			@CAs= `grep -E CA-[0-9]+ $file`;
 #print "$file:",join(',',@CAs),"\n";
 #Iterate through CAs
-				foreach(@CAs){
-				($date,$wk,$cat,$issue)=split(/,/);
+			foreach(@CAs){
+			($date,$wk,$cat,$issue)=split(/,/);
 #print "$date,$wk,$cat,$issue\n";
 #Normalise wk number
 #Anything that happened before $startwk is accounted to that $startweek
-				if($wk lt $startwk)
-					{$wk = $startwk;}
-				$item="$dir.$team.$wk.$pri";
-					$total{$item}+=1;
-				}
+			if($wk lt $startwk)
+				{$wk = $startwk;}
+			$total{$team,$wk,$cat,$pri}+=1;
 }}}
 #print "$_->$total{$_}\n" for (keys %total);exit 0;
 #generate the csv
@@ -41,22 +40,23 @@ foreach(@teams){
 	print '____'.$ppteam.'____'; print ',______' x scalar @wk; print "\n";
 	foreach(@pri){
 		$pri=$_;
-#Compute the Inflow and Outflow
-		@inflow=();
-		@outflow=();
-		map{$item="inflow.$team.$_.$pri";push(@inflow,$total{$item});}@wk;
-		map{$item="outflow.$team.$_.$pri";push(@outflow,$total{$item});}@wk;
-#Compute the Cumulative total
-		@cumul=();
-		$cumul[0]=$inflow[0];
-		for $i (1 .. scalar @inflow-1){
-			$cumul[$i]=$cumul[$i-1]+$inflow[$i];
-		}
-#Compute the Unresolved at end of week
-		@unresEnd=();
-		$unresEnd[0]=$inflow[0]-$outflow[0];
-		for $i (1 .. scalar @inflow-1){
-			$unresEnd[$i]=$unresEnd[$i-1]+$inflow[$i]-$outflow[$i];
+#initialise arrays
+		@outflow=();@inflow=();@cumul=();@unresEnd=();
+		$cumul=0;$unres=0;
+		foreach(@wk){
+			$wk=$_;
+#Compute the Outflow
+			$outflow=0;
+			map{$outflow+=$total{$team,$wk,$_,$pri}}@outflowCat;
+			push(@outflow,$outflow);
+#Compute the Inflow, cumulative inflow, Unresolved per week
+			$inflow=0;
+			map{$inflow+=$total{$team,$wk,$_,$pri}}@inflowCat;
+			$cumul+=$inflow;
+			$unres+=$inflow-$outflow;
+			push(@inflow,$inflow);
+			push(@cumul,$cumul);
+			push(@unresEnd,$unres);
 		}
 #Compute the Unresolved at start of week
 		@unresStart=@unresEnd;
