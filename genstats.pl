@@ -1,7 +1,10 @@
 #!/usr/bin/perl
-$startwk='14wk16';
-$endwk='14wk26';
-@wk = qw(14wk16 14wk17 14wk18 14wk19 14wk20 14wk21 14wk22 14wk23 14wk24 14wk25 14wk26);
+$year=14; #assumes doesn't span years
+$startwk=16;
+$endwk=27;
+#Build an array of weeks 
+map{push(@wk,$year.'wk'.$_);} ($startwk..$endwk);
+$startwkTag=$year.'wk'.$startwk;
 #By team
 @teams = qw(xs-ring0 xs-ring3 xs-storage xs-gui xs-perf xs-windows);
 #For all teams
@@ -27,8 +30,8 @@ foreach (@teams){
 #print "$date,$wk,$cat,$issue\n";
 #Normalise wk number
 #Anything that happened before $startwk is accounted to that $startweek
-			if($wk lt $startwk)
-				{$wk = $startwk;}
+			if($wk lt $startwkTag)
+				{$wk = $startwkTag;}
 			$total{$team,$wk,$cat,$pri}+=1;
 }}}
 #print "$_->$total{$_}\n" for (keys %total);exit 0;
@@ -42,6 +45,8 @@ foreach(@teams){
 		$pri=$_;
 #initialise arrays
 		@outflow=();@inflow=();@cumul=();@unresEnd=();
+		map{$outStr{$_}=''}@outflowCat;
+		map{$inStr{$_}=''}@inflowCat;
 		$cumul=0;$unres=0;
 		foreach(@wk){
 			$wk=$_;
@@ -57,6 +62,10 @@ foreach(@teams){
 			push(@inflow,$inflow);
 			push(@cumul,$cumul);
 			push(@unresEnd,$unres);
+#Generate string for all categories of outflow
+			map{$outStr{$_}.= ",$total{$team,$wk,$_,$pri}"}@outflowCat;
+#Generate string for all categories of inflow
+			map{$inStr{$_}.= ",$total{$team,$wk,$_,$pri}"}@inflowCat;
 		}
 #Compute the Unresolved at start of week
 		@unresStart=@unresEnd;
@@ -69,7 +78,9 @@ foreach(@teams){
 		map{print ",$_";}@wk;
 		print "\n";
 		print 'Unresolved (start of week),',join(',',@unresStart),"\n";
+		map{print $_,$inStr{$_},"\n"}@inflowCat;
 		print 'Inflow,',join(',',@inflow),"\n";
+		map{print $_,$outStr{$_},"\n"}@outflowCat;
 		print 'Outflow,',join(',',@outflow),"\n";
 		print 'Unresolved (end of week),',join(',',@unresEnd),"\n";
 		print 'Cumulative defects raised,',join(',',@cumul),"\n";

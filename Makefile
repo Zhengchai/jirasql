@@ -67,7 +67,7 @@ $(report): $(inflowreport) $(outflowreport)
 login:
 	$(setJiraPass) ; $(ConnectToJira)
 clean: 
-	rm -f inflow.csv outflow.csv $(inflowreport) $(outflowreport) $(inflowCSV) $(outflowCSV)
+	rm -f report.*.csv inflow.*.csv outflow.*.csv
 reallyclean:
 	rm -f *.csv
 createdHistory.$(suffix).csv: createdHistory.sql
