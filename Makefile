@@ -30,8 +30,8 @@ priorityDemotePsqlFormat=$(call qw,$(priorityDemote))
 projectsPsqlFormat=$(call qw,$(projects))
 teamsPsqlFormat=$(call qw,$(team))
 #csv targets
-inflowCSV=createdHistory.$(suffix).csv IssueAffectVersionHistory.$(suffix).csv promotePriorityHistory.$(suffix).csv reopenedHistory.$(suffix).csv
-outflowCSV=resolvedHistory.$(suffix).csv IssueFixVersionHistory.$(suffix).csv demotePriorityHistory.$(suffix).csv 
+inflowCSV=createdHistory.$(suffix).csv IssueAffectVersionHistory.$(suffix).csv promotePriorityHistory.$(suffix).csv teamInHistory.$(suffix).csv reopenedHistory.$(suffix).csv
+outflowCSV=resolvedHistory.$(suffix).csv IssueFixVersionHistory.$(suffix).csv demotePriorityHistory.$(suffix).csv teamOutHistory.$(suffix).csv
 inflowreport=inflow.$(suffix).csv
 outflowreport=outflow.$(suffix).csv
 report=report.$(suffix).csv
@@ -99,6 +99,16 @@ demotePriorityHistory.$(suffix).csv: priorityHistory.sql
 	$(setJiraPass) ; $(ConnectToJira) $(params) \
 	--variable=PRIORITY="$(priorityDemotePsqlFormat)" \
 	--variable=LOG="P-" \
+	-f $< | uniq | tee   $@
+teamInHistory.$(suffix).csv: TeamInHistory.sql
+	$(setJiraPass) ; $(ConnectToJira) $(params) \
+	--variable=PRIORITY="$(priorityPsqlFormat)" \
+	--variable=LOG="T+" \
+	-f $< | uniq | tee   $@
+teamOutHistory.$(suffix).csv: TeamOutHistory.sql
+	$(setJiraPass) ; $(ConnectToJira) $(params) \
+	--variable=PRIORITY="$(priorityPsqlFormat)" \
+	--variable=LOG="T-" \
 	-f $< | uniq | tee   $@
 reopenedHistory.$(suffix).csv: statusHistory.sql
 	$(setJiraPass) ; $(ConnectToJira) $(params) \

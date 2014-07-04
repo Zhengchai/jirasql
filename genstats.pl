@@ -10,8 +10,8 @@ $startwkTag=$year.'wk'.$startwk;
 #For all teams
 push(@teams,'xs-ring0,xs-ring3,xs-storage,xs-gui,xs-perf,xs-windows');
 @pri =('Blocker,Critical','Major');
-@inflowCat=qw(C+ V+ P+ O+);
-@outflowCat=qw(R- V- P-);
+@inflowCat=qw(C+ V+ P+ T+ O+);
+@outflowCat=qw(R- V- P- T-);
 @cat=(@inflow,@outflow);
 
 #parse the totals

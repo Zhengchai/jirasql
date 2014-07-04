@@ -17,7 +17,7 @@ team='xs-ring0,xs-ring3,xs-storage,xs-gui,xs-perf,xs-windows'
 #
 #Generate stats
 #
-./genstats.pl >> report.csv
+./genstats.pl > report.csv
 exit 0
 
 
