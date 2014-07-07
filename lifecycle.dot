@@ -1,0 +1,32 @@
+digraph CALifecycle {
+	overlap=false
+	fontsize=12;
+	Title [label="Simplified CA life cycle" shape = plaintext];
+	I [label="Idle" shape = doublecircle];
+	C [label="Closed" shape = doublecircle];
+	M [label="Major" shape = circle];
+	BC [label="Blocker\nCritical" shape = circle];
+	{rank=same Title}
+	{rank=same I}
+	{rank=same M BC}
+	{rank=same C}
+	I  -> I  [ label = "P+,O+\nIgnore"];
+	I  -> M  [ label = "C+,V+,T+"];
+	I  -> BC [ label = "C+,V+,T+"];
+	M  -> BC [ label = "P+"];
+	BC -> M  [ label = "P-"];
+	BC -> BC [ label = "T+,P+,\nLog Error" tailport=ne headport=e];
+	M  -> M  [ label = "T+,\nLog Error" tailport=nw headport=w];
+	M  -> C  [ label = "R-,V-,T-,P-"];
+	BC -> C  [ label = "R-,V-,T-"];
+	C  -> M  [ label = "O+"];
+	C  -> BC [ label = "O+"];
+	label="A CA can be in Blocker/Critical or Major State\n\
+	Possible transitions for a CA are:\n\
+	C+ Created                R- Resolved\n\
+	V+ Affect Version         V- Set to Outgoing for Version\n\
+	T+ Transferred to team    T- Transferred out of team\n\
+	P+ Priority increased     P- Priority decreased\n\
+	O+ Reopened"
+}
+
