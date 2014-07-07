@@ -1,9 +1,9 @@
 #!/usr/bin/perl
 $year=14; #assumes doesn't span years
-$startwk=16;
+$startwk=14;
 $endwk=27;
 #Build an array of weeks 
-map{push(@wk,$year.'wk'.$_);} ($startwk..$endwk);
+@wk=map{$year.'wk'.$_} ($startwk..$endwk);
 $startwkTag=$year.'wk'.$startwk;
 #By team
 @teams = qw(xs-ring0 xs-ring3 xs-storage xs-gui xs-perf xs-windows);
@@ -74,9 +74,7 @@ foreach(@teams){
 #Output the csv data
 		$pri =~ s/,/ & /g; # pretty print priority
 		print "Priority: $pri\n";
-		print "wk number";
-		map{print ",$_";}@wk;
-		print "\n";
+		print 'wk number,',join(',',@wk),"\n";
 		print 'Unresolved (start of week),',join(',',@unresStart),"\n";
 		map{print $_,$inStr{$_},"\n"}@inflowCat;
 		print 'Inflow,',join(',',@inflow),"\n";
