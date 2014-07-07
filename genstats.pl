@@ -19,7 +19,7 @@ foreach (@teams){
 	$team=$_;
 	foreach(@pri){
 		$pri=$_;
-			$file="report.$team.$pri.csv";
+			$file="$team.$pri.report.csv";
 #grep the CAs
 			-e $file or die "ABORT: $file NOT FOUND!\n";
 			@CAs= `grep -E CA-[0-9]+ $file`;
