@@ -1,4 +1,4 @@
-select to_char(changegroup.created, 'YYYY-MM-DD","YY"wk"IW'),:'LOG',concat(project.pkey,'-',j.issuenum),j.assignee,concat(pold.pname,'->',pnew.pname)
+select to_char(changegroup.created, 'YYYY-MM-DD","YY"wk"IW'),:'LOG',concat(project.pkey,'-',j.issuenum),pnew.pname,j.assignee,concat(pold.pname,'->',pnew.pname)
 from  jiraissue j,project,changeitem,changegroup,label l,priority pold,issuetype,priority pnew
 where j.project=project.id and project.pkey in (:PROJECTS)
 and l.issue=j.id and l.label in (:TEAM) 
