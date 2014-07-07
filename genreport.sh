@@ -5,8 +5,7 @@
 teams="xs-ring0 xs-ring3 xs-storage xs-gui xs-perf xs-windows"
 for team in $teams
 do
-	make team=$team priority='Blocker,Critical' priorityDemote='Major,Minor,Trivial'
-	make team=$team priority='Major' priorityDemote='Minor,Trivial'
+	make team=$team
 done
 #
 # Exec global SQL query
