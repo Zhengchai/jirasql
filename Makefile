@@ -4,13 +4,14 @@
 # with persons who were assigned or commented on jira tickets, between a set of dates
 # using the jira SQL interface, see: https://developer.atlassian.com/display/JIRADEV/Database+Schema 
 #
-.PHONY: login clean reallyclean test dotar test
+.PHONY: login clean reallyclean deploy test 
 
 ##########################customise this section###############################################
-team=xs-ring0
+team=xs-ring3
 IssueVersion=Creedence
 FixVersion=Creedence Outgoing
 startDate=2014-04-01 00:00:00
+deployTarget=/local/scratch/creedence
 ########################end of custom section##################################################
 #jira server params, read from .config file
 host=$(lastword $(shell grep 'host' .config))
@@ -35,17 +36,32 @@ params+= --variable=STATUS="'Resolved','Closed'" --variable=STARTDATE="'$(startD
 ###############################################################################################
 all: $(inflowCSV) $(outflowCSV) $(team).allEvents.csv $(inflowByPriority) $(outflowByPriority) $(report)
 #all: test
-$(team).allEvents.csv: $(inflowCSV) $(outflowCSV)
-	sort -r $^ | ./filter.pl > $@
-$(team).Blocker,Critical.inflow.csv: $(team).allEvents.csv
-	cat $< | perl -ne '/,.?\+,/ && print' | perl -ne '/,Critical,|,Blocker,/ && print' >$@
-$(team).Blocker,Critical.outflow.csv: $(team).allEvents.csv
-	cat $< | perl -ne '/,.?\-,/ && print' | perl -ne '/,Critical,|,Blocker,/ && print' >$@
-$(team).Major.inflow.csv: $(team).allEvents.csv
-	cat $< | perl -ne '/,.?\+,/ && print' | perl -ne '/,Major,/ && print' >$@
-$(team).Major.outflow.csv: $(team).allEvents.csv
-	cat $< | perl -ne '/,.?\-,/ && print' | perl -ne '/,Major,/ && print' >$@
+
+#$(team).allEvents.csv: $(inflowCSV) $(outflowCSV)
+#	sort -r $^ | ./filter.pl > $@
+
+#$(team).Blocker,Critical.inflow.csv: $(team).allEvents.csv
+#	grep -P '^.*?,.*?,.\+,.*?,(Critical|Blocker),' $< >$@
+#$(team).Blocker,Critical.outflow.csv: $(team).allEvents.csv
+#	grep -P '^.*?,.*?,.\-,.*?,(Critical|Blocker),' $< >$@
+#$(team).Major.inflow.csv: $(team).allEvents.csv
+#	grep -P '^.*?,.*?,.\+,.*?,Major,' $< >$@
+#$(team).Major.outflow.csv: $(team).allEvents.csv
+#	grep -P '^.*?,.*?,.\-,.*?,Major,' $< >$@
+
  
+$(team).Blocker,Critical.inflow.csv: $(inflowCSV)
+	grep -P --no-filename '^.*?,.*?,.\+,.*?,(Critical|Blocker),' $^ > /tmp/tmpinflowBC.csv
+	sort -r /tmp/tmpinflowBC.csv | ./rmdupIn.pl	>  $@
+$(team).Blocker,Critical.outflow.csv: $(outflowCSV)
+	grep -P --no-filename '^.*?,.*?,.\-,.*?,(Critical|Blocker),' $^ > /tmp/tmpoutflowBC.csv
+	sort -r /tmp/tmpoutflowBC.csv | ./rmdupOut.pl $(team).Blocker,Critical.inflow.csv >  $@
+$(team).Major.inflow.csv: $(inflowCSV)
+	grep -P --no-filename '^.*?,.*?,.\+,.*?,Major,' $^ > /tmp/tmpinflowM.csv
+	sort -r /tmp/tmpinflowM.csv | ./rmdupIn.pl	>  $@
+$(team).Major.outflow.csv: $(outflowCSV)
+	grep -P --no-filename '^.*?,.*?,.\-,.*?,Major,' $^ > /tmp/tmpoutflowM.csv
+	sort -r /tmp/tmpoutflowM.csv | ./rmdupOut.pl $(team).Major.inflow.csv >  $@
 #$(team).inflow.csv: $(inflowCSV)
 #	sort $(inflowCSV)	> /tmp/tmpinflow.csv
 #	sort -r /tmp/tmpinflow.csv | ./rmdupIn.pl	>  $@
@@ -69,7 +85,7 @@ $(team).%.report.csv: $(team).%.inflow.csv $(team).%.outflow.csv
 login:
 	$(setJiraPass) ; $(ConnectToJira)
 clean: 
-	rm -f report.*.csv inflow.*.csv outflow.*.csv
+	rm -f *report.csv *inflow.csv *outflow.csv
 reallyclean:
 	rm -f *.csv
 lifecycle.dot.png: lifecycle.dot
@@ -94,6 +110,9 @@ $(team).%.csv: %.sql
 	$(setJiraPass) ; $(ConnectToJira) $(params) \
 	--variable=PRIORITY="'Blocker','Critical','Major'" --variable=LOG="$*" \
 	-f $< | uniq | tee   $@
+deploy:
+	cp -f *report.csv $(deployTarget)/csv/
+	cp -f index.html $(deployTarget)/
 test:
 	@echo $(params)
 
