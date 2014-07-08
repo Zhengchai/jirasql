@@ -35,8 +35,9 @@ params+= --variable=RELIN="$(IssueVersion)" --variable=RELEXCL="$(FixVersion)"
 params+= --variable=STATUS="'Resolved','Closed'" --variable=STARTDATE="'$(startDate)'"
 ###############################################################################################
 all: $(inflowCSV) $(outflowCSV) $(team).allEvents.csv $(inflowByPriority) $(outflowByPriority) $(report)
-#all: test
 
+#Targets for calculation using the 'lifecycle method'
+#switched off for now as they don't provide increase in accuracy
 #$(team).allEvents.csv: $(inflowCSV) $(outflowCSV)
 #	sort -r $^ | ./filter.pl > $@
 
@@ -62,12 +63,7 @@ $(team).Major.inflow.csv: $(inflowCSV)
 $(team).Major.outflow.csv: $(outflowCSV)
 	grep -P --no-filename '^.*?,.*?,.\-,.*?,Major,' $^ > /tmp/tmpoutflowM.csv
 	sort -r /tmp/tmpoutflowM.csv | ./rmdupOut.pl $(team).Major.inflow.csv >  $@
-#$(team).inflow.csv: $(inflowCSV)
-#	sort $(inflowCSV)	> /tmp/tmpinflow.csv
-#	sort -r /tmp/tmpinflow.csv | ./rmdupIn.pl	>  $@
-#$(team).outflow.csv: $(outflowCSV) $(inflowreport)
-#	cat $(outflowCSV)	> /tmp/tmpoutflow.csv
-#	sort -r /tmp/tmpoutflow.csv | ./rmdupOut.pl $(inflowreport) >  $@
+
 $(team).%.report.csv: $(team).%.inflow.csv $(team).%.outflow.csv
 	@echo 'Generating report...'
 	@echo 'Team: $(team)'							| tee -a  $@
