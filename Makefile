@@ -73,7 +73,7 @@ $(team).BC.P-.csv: P+-.sql
 	-f $< | uniq | tee   $@
 $(team).M.P+.csv: P+-.sql
 	$(setJiraPass) ; $(ConnectToJira) $(params) \
-	--variable=PRIORITY="Major" --variable=LOG="P+" \
+	--variable=PRIORITY="'Major'" --variable=LOG="P+" \
 	-f $< | uniq | tee   $@
 $(team).M.P-.csv: P+-.sql
 	$(setJiraPass) ; $(ConnectToJira) $(params) \
@@ -81,7 +81,7 @@ $(team).M.P-.csv: P+-.sql
 	-f $< | uniq | tee   $@
 $(team).%.csv: %.sql
 	$(setJiraPass) ; $(ConnectToJira) $(params) \
-	--variable=LOG="$*" \
+	--variable=PRIORITY="'Blocker','Critical','Major'" --variable=LOG="$*" \
 	-f $< | uniq | tee   $@
 test:
 	@echo $(params)

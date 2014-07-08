@@ -1,7 +1,7 @@
 select to_char(changegroup.created, 'YYYY-MM-DD","YY"wk"IW'),:'LOG',concat(project.pkey,'-',j.issuenum),priority.pname,j.assignee,concat(changeitem.oldstring,'->',changeitem.newstring)
 from  jiraissue j,project,changeitem,changegroup,priority,issuetype
 where j.project=project.id and project.pkey in (:PROJECTS)
-and j.priority=priority.id
+and j.priority=priority.id and priority.pname in (:PRIORITY)
 and j.issuetype=issuetype.id and issuetype.pname='Bug'
 and changeitem.field = 'Teams' 
 and position((:TEAM) in changeitem.newstring) = 0
