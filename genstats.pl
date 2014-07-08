@@ -8,7 +8,7 @@ $startwkTag=$year.'wk'.$startwk;
 #By team
 @teams = qw(xs-ring0 xs-ring3 xs-storage xs-gui xs-perf xs-windows);
 #For all teams
-push(@teams,'xs-ring0,xs-ring3,xs-storage,xs-gui,xs-perf,xs-windows');
+#push(@teams,'xs-ring0,xs-ring3,xs-storage,xs-gui,xs-perf,xs-windows');
 @pri =('Blocker,Critical','Major');
 @inflowCat=qw(C+ V+ P+ T+ O+);
 @outflowCat=qw(R- V- P- T-);

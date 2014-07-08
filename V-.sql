@@ -6,5 +6,6 @@ and j.issuetype=issuetype.id and issuetype.pname='Bug'
 and l.issue=j.id and l.label in (:TEAM) 
 and changeitem.field = 'Fix Version' and changeitem.newstring=:'RELEXCL'
 and changegroup.id=changeitem.groupid and changegroup.issueid=j.id 
+and changegroup.created  > :'STARTDATE'
 order by changegroup.created DESC;
 

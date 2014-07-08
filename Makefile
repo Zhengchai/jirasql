@@ -10,6 +10,7 @@
 team=xs-ring0
 IssueVersion=Creedence
 FixVersion=Creedence Outgoing
+startDate=2014-04-01 00:00:00
 ########################end of custom section##################################################
 #jira server params, read from .config file
 host=$(lastword $(shell grep 'host' .config))
@@ -21,27 +22,37 @@ qw=$(shell echo $(1) | sed "s/\([^,]*\)/'\1'/g")
 #Sets of csv targets
 inflowCSV =$(team).C+.csv $(team).V+.csv $(team).T+.csv $(team).BC.P+.csv $(team).M.P+.csv $(team).O+.csv
 outflowCSV=$(team).R-.csv $(team).V-.csv $(team).T-.csv $(team).BC.P-.csv $(team).M.P-.csv 
-report=$(team).report.csv
+inflowByPriority= $(team).Blocker,Critical.inflow.csv   $(team).Major.inflow.csv
+outflowByPriority=$(team).Blocker,Critical.outflow.csv  $(team).Major.outflow.csv
+report=$(team).Blocker,Critical.report.csv $(team).Major.report.csv
 #psql generic query
 setJiraPass=export PGPASSWORD=$(password)
 ConnectToJira=psql --host=$(host) --dbname=$(dbname) --username=$(username)
 params=--field-separator="," --no-align --tuples-only 
 params+= --variable=TEAM="$(call qw,$(team))" --variable=PROJECTS="'CA'"
 params+= --variable=RELIN="$(IssueVersion)" --variable=RELEXCL="$(FixVersion)"
-params+= --variable=STATUS="'Resolved','Closed'"
+params+= --variable=STATUS="'Resolved','Closed'" --variable=STARTDATE="'$(startDate)'"
 ###############################################################################################
-all: $(inflowCSV) $(outflowCSV) $(team).allEvents.csv 
-#$(inflowreport) $(outflowreport) $(report)
+all: $(inflowCSV) $(outflowCSV) $(team).allEvents.csv $(inflowByPriority) $(outflowByPriority) $(report)
 #all: test
 $(team).allEvents.csv: $(inflowCSV) $(outflowCSV)
-	sort $^ > $@
+	sort -r $^ | ./filter.pl > $@
+$(team).Blocker,Critical.inflow.csv: $(team).allEvents.csv
+	cat $< | perl -ne '/,.?\+,/ && print' | perl -ne '/,Critical,|,Blocker,/ && print' >$@
+$(team).Blocker,Critical.outflow.csv: $(team).allEvents.csv
+	cat $< | perl -ne '/,.?\-,/ && print' | perl -ne '/,Critical,|,Blocker,/ && print' >$@
+$(team).Major.inflow.csv: $(team).allEvents.csv
+	cat $< | perl -ne '/,.?\+,/ && print' | perl -ne '/,Major,/ && print' >$@
+$(team).Major.outflow.csv: $(team).allEvents.csv
+	cat $< | perl -ne '/,.?\-,/ && print' | perl -ne '/,Major,/ && print' >$@
+ 
 #$(team).inflow.csv: $(inflowCSV)
 #	sort $(inflowCSV)	> /tmp/tmpinflow.csv
 #	sort -r /tmp/tmpinflow.csv | ./rmdupIn.pl	>  $@
 #$(team).outflow.csv: $(outflowCSV) $(inflowreport)
 #	cat $(outflowCSV)	> /tmp/tmpoutflow.csv
 #	sort -r /tmp/tmpoutflow.csv | ./rmdupOut.pl $(inflowreport) >  $@
-$(team).report.csv: $(team).inflow.csv $(team).outflow.csv
+$(team).%.report.csv: $(team).%.inflow.csv $(team).%.outflow.csv
 	@echo 'Generating report...'
 	@echo 'Team: $(team)'							| tee -a  $@
 	@echo 'Release: $(IssueVersion)'				| tee -a  $@
@@ -53,7 +64,7 @@ $(team).report.csv: $(team).inflow.csv $(team).outflow.csv
 	@echo 'T+ Team affected              T- Team not affected'		| tee -a  $@
 	@echo 'O+ Issue Reopened'						| tee -a  $@
 	@echo 											| tee -a  $@
-	@cat $(inflowreport) $(outflowreport) | sort -r | tee -a  $@
+	@cat $^ | sort -r | tee -a  $@
 	
 login:
 	$(setJiraPass) ; $(ConnectToJira)
@@ -63,19 +74,19 @@ reallyclean:
 	rm -f *.csv
 lifecycle.dot.png: lifecycle.dot
 	 dot -O -Tpng $<
-$(team).BC.P+.csv: P+-.sql
+$(team).BC.P+.csv: P+.sql
 	$(setJiraPass) ; $(ConnectToJira) $(params) \
 	--variable=PRIORITY="'Blocker','Critical'" --variable=LOG="P+" \
 	-f $< | uniq | tee   $@
-$(team).BC.P-.csv: P+-.sql
-	$(setJiraPass) ; $(ConnectToJira) $(params) \
-	--variable=PRIORITY="'Major','Minor','Trivial'"	--variable=LOG="P-" \
-	-f $< | uniq | tee   $@
-$(team).M.P+.csv: P+-.sql
+$(team).M.P+.csv: P+.sql
 	$(setJiraPass) ; $(ConnectToJira) $(params) \
 	--variable=PRIORITY="'Major'" --variable=LOG="P+" \
 	-f $< | uniq | tee   $@
-$(team).M.P-.csv: P+-.sql
+$(team).BC.P-.csv: P-.sql
+	$(setJiraPass) ; $(ConnectToJira) $(params) \
+	--variable=PRIORITY="'Major','Minor','Trivial'"	--variable=LOG="P-" \
+	-f $< | uniq | tee   $@
+$(team).M.P-.csv: P-.sql
 	$(setJiraPass) ; $(ConnectToJira) $(params) \
 	--variable=PRIORITY="'Minor','Trivial'" --variable=LOG="P-" \
 	-f $< | uniq | tee   $@

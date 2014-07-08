@@ -8,7 +8,7 @@ and changeitem.field = 'status'
 and changeitem.newvalue=newstatus.id and newstatus.pname NOT in (:STATUS)
 and changeitem.oldvalue=oldstatus.id and oldstatus.pname in (:STATUS)
 and changegroup.id=changeitem.groupid and changegroup.issueid=j.id 
-
+and changegroup.created  > :'STARTDATE'
 and j.id in (select SOURCE_NODE_ID from nodeassociation nain,projectversion pvin 
 	where nain.ASSOCIATION_TYPE='IssueVersion' 
 	and pvin.id=nain.SINK_NODE_ID 

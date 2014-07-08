@@ -1,13 +1,12 @@
-select to_char(changegroup.created, 'YYYY-MM-DD","YY"wk"IW'),:'LOG',concat(project.pkey,'-',j.issuenum),priority.pname,j.assignee,concat(changeitem.oldstring,'->',changeitem.newstring)
-from  jiraissue j,project,changeitem,changegroup,priority,issuetype
+select to_char(changegroup.created, 'YYYY-MM-DD","YY"wk"IW'),:'LOG',concat(project.pkey,'-',j.issuenum),pnew.pname,j.assignee,concat(pold.pname,'->',pnew.pname)
+from  jiraissue j,project,changeitem,changegroup,label l,priority pold,issuetype,priority pnew
 where j.project=project.id and project.pkey in (:PROJECTS)
-and j.priority=priority.id and priority.pname in (:PRIORITY)
+and l.issue=j.id and l.label in (:TEAM) 
 and j.issuetype=issuetype.id and issuetype.pname='Bug'
-and changeitem.field = 'Teams' 
-and position((:TEAM) in changeitem.newstring) != 0
-and position((:TEAM) in changeitem.oldstring) =0
-and changegroup.id=changeitem.groupid 
-and changegroup.issueid=j.id 
+and changeitem.field = 'priority' 
+and changeitem.newvalue=pnew.id and pnew.pname in (:PRIORITY)
+and changeitem.oldvalue=pold.id and pold.pname not in (:PRIORITY)
+and changegroup.id=changeitem.groupid  and changegroup.issueid=j.id 
 and changegroup.created  > :'STARTDATE'
 
 and j.id in (select SOURCE_NODE_ID from nodeassociation nain,projectversion pvin 

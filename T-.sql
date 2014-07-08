@@ -8,6 +8,7 @@ and position((:TEAM) in changeitem.newstring) = 0
 and position((:TEAM) in changeitem.oldstring) != 0
 and changegroup.id=changeitem.groupid 
 and changegroup.issueid=j.id 
+and changegroup.created  > :'STARTDATE'
 
 and j.id in (select SOURCE_NODE_ID from nodeassociation nain,projectversion pvin 
 	where nain.ASSOCIATION_TYPE='IssueVersion' 

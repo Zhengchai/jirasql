@@ -3,6 +3,7 @@ from  jiraissue j,project,issuetype,priority
 where j.project=project.id and project.pkey in (:PROJECTS)
 and j.priority=priority.id and priority.pname in (:PRIORITY)
 and j.issuetype=issuetype.id and issuetype.pname='Bug'
+and j.created > :'STARTDATE'
 and j.id in (select label.issue from label where label.label in (:TEAM))
 and j.id in (select nain.SOURCE_NODE_ID from nodeassociation nain,projectversion pvin 
 	where nain.ASSOCIATION_TYPE='IssueVersion'

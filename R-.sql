@@ -5,6 +5,7 @@ and j.priority=priority.id and priority.pname in (:PRIORITY)
 and j.issuetype=issuetype.id and issuetype.pname='Bug'
 and l.issue=j.id and l.label in (:TEAM) 
 and j.resolution=resolution.id
+and j.resolutiondate  > :'STARTDATE'
 
 and j.id in (select SOURCE_NODE_ID from nodeassociation nain,projectversion pvin 
 	where nain.ASSOCIATION_TYPE='IssueVersion' 
