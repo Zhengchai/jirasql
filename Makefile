@@ -7,7 +7,7 @@
 .PHONY: login clean reallyclean deploy test 
 
 ##########################customise this section###############################################
-team=xs-ring3
+team=xs-ring0
 IssueVersion=Creedence
 FixVersion=Creedence Outgoing
 startDate=2014-04-01 00:00:00
@@ -34,7 +34,7 @@ params+= --variable=TEAM="$(call qw,$(team))" --variable=PROJECTS="'CA'"
 params+= --variable=RELIN="$(IssueVersion)" --variable=RELEXCL="$(FixVersion)"
 params+= --variable=STATUS="'Resolved','Closed'" --variable=STARTDATE="'$(startDate)'"
 ###############################################################################################
-all: $(inflowCSV) $(outflowCSV) $(team).allEvents.csv $(inflowByPriority) $(outflowByPriority) $(report)
+all: $(inflowCSV) $(outflowCSV) $(inflowByPriority) $(outflowByPriority) $(report)
 
 #Targets for calculation using the 'lifecycle method'
 #switched off for now as they don't provide increase in accuracy
@@ -52,17 +52,21 @@ all: $(inflowCSV) $(outflowCSV) $(team).allEvents.csv $(inflowByPriority) $(outf
 
  
 $(team).Blocker,Critical.inflow.csv: $(inflowCSV)
-	grep -P --no-filename '^.*?,.*?,.\+,.*?,(Critical|Blocker),' $^ > /tmp/tmpinflowBC.csv
-	sort -r /tmp/tmpinflowBC.csv | ./rmdupIn.pl	>  $@
+	grep -P --no-filename '^.*?,.*?,.\+,.*?,(Critical|Blocker),' $^ > /tmp/raw.$@
+	sort -r /tmp/raw.$@ | ./rmdupIn.pl	>  $@
 $(team).Blocker,Critical.outflow.csv: $(outflowCSV)
-	grep -P --no-filename '^.*?,.*?,.\-,.*?,(Critical|Blocker),' $^ > /tmp/tmpoutflowBC.csv
-	sort -r /tmp/tmpoutflowBC.csv | ./rmdupOut.pl $(team).Blocker,Critical.inflow.csv >  $@
+	grep -P --no-filename '^.*?,.*?,.\-,.*?,(Critical|Blocker),' $^ > /tmp/raw.$@
+	sort -r /tmp/raw.$@ | ./rmdupOut.pl $(team).Blocker,Critical.inflow.csv >  $@
 $(team).Major.inflow.csv: $(inflowCSV)
-	grep -P --no-filename '^.*?,.*?,.\+,.*?,Major,' $^ > /tmp/tmpinflowM.csv
-	sort -r /tmp/tmpinflowM.csv | ./rmdupIn.pl	>  $@
+	grep -P --no-filename '^.*?,.*?,.\+,.*?,Major,' $^ > /tmp/raw.$@
+	sort -r /tmp/raw.$@ | ./rmdupIn.pl	>  $@
 $(team).Major.outflow.csv: $(outflowCSV)
-	grep -P --no-filename '^.*?,.*?,.\-,.*?,Major,' $^ > /tmp/tmpoutflowM.csv
-	sort -r /tmp/tmpoutflowM.csv | ./rmdupOut.pl $(team).Major.inflow.csv >  $@
+	grep -P --no-filename '^.*?,.*?,.\-,.*?,Major,' $^ > /tmp/raw.$@
+	grep ',P+,' $(team).Blocker,Critical.inflow.csv > /tmp/inflowmap.$@ 
+	cat  $(team).Major.inflow.csv >> /tmp/inflowmap.$@ 
+	sort -r /tmp/raw.$@ | ./rmdupOut.pl /tmp/inflowmap.$@ >  $@
+
+#	cat /tmp/P+.csv $(team).Major.inflow.csv > /tmp/inflowmap.$@ 
 
 $(team).%.report.csv: $(team).%.inflow.csv $(team).%.outflow.csv
 	@echo 'Generating report...'
@@ -81,7 +85,7 @@ $(team).%.report.csv: $(team).%.inflow.csv $(team).%.outflow.csv
 login:
 	$(setJiraPass) ; $(ConnectToJira)
 clean: 
-	rm -f *report.csv *inflow.csv *outflow.csv
+	rm -f *.report.csv report.csv *inflow.csv *outflow.csv
 reallyclean:
 	rm -f *.csv
 lifecycle.dot.png: lifecycle.dot
@@ -96,11 +100,11 @@ $(team).M.P+.csv: P+.sql
 	-f $< | uniq | tee   $@
 $(team).BC.P-.csv: P-.sql
 	$(setJiraPass) ; $(ConnectToJira) $(params) \
-	--variable=PRIORITY="'Major','Minor','Trivial'"	--variable=LOG="P-" \
+	--variable=PRIORITY="'Blocker','Critical'"	--variable=LOG="P-" \
 	-f $< | uniq | tee   $@
 $(team).M.P-.csv: P-.sql
 	$(setJiraPass) ; $(ConnectToJira) $(params) \
-	--variable=PRIORITY="'Minor','Trivial'" --variable=LOG="P-" \
+	--variable=PRIORITY="'Major'" --variable=LOG="P-" \
 	-f $< | uniq | tee   $@
 $(team).%.csv: %.sql
 	$(setJiraPass) ; $(ConnectToJira) $(params) \

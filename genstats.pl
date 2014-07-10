@@ -1,14 +1,14 @@
 #!/usr/bin/perl
 $year=14; #assumes doesn't span years
 $startwk=14;
-$endwk=27;
+$endwk=28;
 #Build an array of weeks 
 @wk=map{$year.'wk'.$_} ($startwk..$endwk);
 $startwkTag=$year.'wk'.$startwk;
 #By team
 @teams = qw(xs-ring0 xs-ring3 xs-storage xs-gui xs-perf xs-windows);
 #For all teams
-#push(@teams,'xs-ring0,xs-ring3,xs-storage,xs-gui,xs-perf,xs-windows');
+push(@teams,'xs-ring0,xs-ring3,xs-storage,xs-gui,xs-perf,xs-windows');
 @pri =('Blocker,Critical','Major');
 @inflowCat=qw(C+ V+ P+ T+ O+);
 @outflowCat=qw(R- V- P- T-);
