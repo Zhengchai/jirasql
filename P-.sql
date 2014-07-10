@@ -4,8 +4,8 @@ where j.project=project.id and project.pkey in (:PROJECTS)
 and l.issue=j.id and l.label in (:TEAM) 
 and j.issuetype=issuetype.id and issuetype.pname='Bug'
 and changeitem.field = 'priority' 
-and changeitem.newvalue=pnew.id and pnew.pname in (:PRIORITY)
-and changeitem.oldvalue=pold.id and pold.pname not in (:PRIORITY)
+and changeitem.newvalue=pnew.id and pold.pname in (:PRIORITY)
+and changeitem.oldvalue=pold.id and pnew.pname not in (:PRIORITY)
 and changegroup.id=changeitem.groupid  and changegroup.issueid=j.id 
 and changegroup.created  > :'STARTDATE'
 
